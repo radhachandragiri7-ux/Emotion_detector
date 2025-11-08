@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>History</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Emotion Detector</div>
+    <nav><a href="{{ url_for('index') }}">Home</a></nav>
+  </header>
+
+  <main class="layout single">
+    <section class="card">
+      <h1>History</h1>
+      <form method="post" action="{{ url_for('history_page') }}" onsubmit="return confirm('Clear history?')">
+        <button type="submit" class="btn ghost">Clear History</button>
+      </form>
+
+      <div class="history-list-block">
+        {% if history %}
+          <ul class="history-list">
+            {% for e in history %}
+              <li><span class="time">{{ e.time }}</span> — "{{ e.text }}" — <strong>{{ e.emoji }}</strong> ({{ e.emotion }})</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="muted">No history yet</div>
+        {% endif %}
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div>Made for internship submission — Python & Flask</div>
+  </footer>
+</body>
+</html>

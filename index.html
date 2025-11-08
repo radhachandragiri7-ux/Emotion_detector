@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Detector from Text</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to right, #e0eafc, #cfdef3);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 40px;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 10px;
+            resize: none;
+            outline: none;
+        }
+
+        button {
+            display: block;
+            margin: 15px auto;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: #27ae60;
+        }
+
+        .clear-btn {
+            background-color: #e74c3c;
+            margin-top: 10px;
+        }
+
+        .clear-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .result {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .emoji {
+            font-size: 50px;
+            margin-top: 10px;
+        }
+
+        .history {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .history h3 {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .history-item {
+            background: white;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+
+        .history-item span {
+            font-size: 20px;
+        }
+
+        canvas {
+            margin-top: 25px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Emotion Detector from Text</h1>
+
+        <form action="/" method="POST">
+            <textarea name="text" placeholder="Type your sentence here...">{{ user_input or '' }}</textarea>
+            <button type="submit">Detect Emotion</button>
+        </form>
+
+        {% if emotion %}
+        <div class="result">
+            <h2>Detected Emotion: {{ emotion }}</h2>
+            <div class="emoji">{{ emoji }}</div>
+            <canvas id="emotionChart"></canvas>
+        </div>
+        {% endif %}
+
+        {% if history %}
+        <div class="history">
+            <h3>Recent History</h3>
+            <form action="/clear_history" method="POST">
+                <button class="clear-btn" type="submit">Clear History</button>
+            </form>
+            {% for item in history %}
+            <div class="history-item">
+                <strong>{{ item.text }}</strong> — {{ item.emotion }} <span>{{ item.emoji }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        const labels = {{ chart_labels | tojson }};
+        const values = {{ chart_values | tojson }};
+        const detectedEmotion = "{{ emotion }}";
+        const emojiMap = {{ EMO_EMOJI | tojson }};
+
+        const ctx = document.getElementById('emotionChart')?.getContext('2d');
+        if (ctx) {
+            const emojis = labels.map(label => {
+                return label.toLowerCase() === detectedEmotion.toLowerCase() ? emojiMap[label] : "";
+            });
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: 'rgba(255,255,255,0)',
+                        borderColor: '#ccc',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed.y;
+                                }
+                            }
+                        }
+                    },
+                    scales: { y: { beginAtZero: true } }
+                },
+                plugins: [{
+                    afterDatasetsDraw: chart => {
+                        const ctx = chart.ctx;
+                        ctx.font = '28px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        chart.data.datasets[0].data.forEach((value, index) => {
+                            const meta = chart.getDatasetMeta(0).data[index];
+                            const emoji = emojis[index];
+                            if (emoji) {
+                                const x = meta.x;
+                                const y = meta.y + (meta.base - meta.y) / 2;
+                                ctx.fillText(emoji, x, y);
+                            }
+                        });
+                    }
+                }]
+            });
+        }
+    </script>
+</body>
+</html>

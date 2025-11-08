@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Emotion Detector — Result</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Emotion Detector</div>
+    <nav><a href="{{ url_for('history_page') }}">History</a></nav>
+  </header>
+
+  <main class="layout single">
+    <section class="card result-card">
+      <h1>Detected Emotion</h1>
+
+      <div class="result-line">
+        <div class="result-emoji">{{ emoji_map.get(result.emotion.split()[0], '😐') }}</div>
+        <div class="result-text">
+          <div class="label">Emotion</div>
+          <div class="value">{{ result.emotion }}</div>
+          <div class="small"><strong>Confidence:</strong> {{ result.score }}</div>
+          <div class="small"><strong>Matched:</strong>
+            {% if result.matches %}
+              {% for m in result.matches %}
+                <span class="chip">{{ m.word }}{% if m.negated %} (neg){% endif %}</span>
+              {% endfor %}
+            {% else %}
+              — none —
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <a class="btn" href="{{ url_for('index') }}">New Detection</a>
+        <a class="btn ghost" href="{{ url_for('history_page') }}">Open History</a>
+      </div>
+    </section>
+
+    <aside class="card chart-card">
+      <h2>History (aggregate)</h2>
+      <canvas id="chart"></canvas>
+      <div class="legend muted">Counts from saved history</div>
+    </aside>
+  </main>
+
+  <section class="history-block card">
+    <h3>Recent detections</h3>
+    {% if history %}
+      <ul class="history-list">
+        {% for e in history[:8] %}
+          <li><span class="time">{{ e.time }}</span> — "{{ e.text }}" — <strong>{{ e.emoji }}</strong> ({{ e.emotion }})</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="muted">No history yet</div>
+    {% endif %}
+  </section>
+
+  <footer class="footer">
+    <div>Made for internship submission — Python & Flask</div>
+  </footer>
+
+<script>
+  const labels = {{ chart_labels|tojson }};
+  const values = {{ chart_values|tojson }};
+  const mapping = {{ {'Happy':'😊','Sad':'😢','Angry':'😡','Surprised':'😲','Fear':'😨','Disgust':'🤢','Neutral':'😐'}|tojson }};
+  const emojiLabels = labels.map(l => mapping[l] || l);
+
+  const ctx = document.getElementById('chart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: emojiLabels,
+      datasets: [{
+        label: 'Counts',
+        data: values,
+        backgroundColor: '#4e79a7',
+        borderRadius: 8
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+</script>
+</body>
+</html>
